@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+@theme inline {
+  --font-sans: var(--font-noto-sans-gujarati);
+}
+
+body {
+  font-family: var(--font-noto-sans-gujarati), sans-serif;
+}
