@@ -1,6 +1,10 @@
 "use client";
 
-import { UserRole, WorkflowStage, ApplicationStatus } from "@prisma/client";
+import type {
+  ApplicationStatus,
+  UserRole,
+  WorkflowStage,
+} from "@prisma/client";
 import { useActionState } from "react";
 import {
   workflowAction,
@@ -8,20 +12,20 @@ import {
 } from "@/app/dashboard/applications/actions";
 
 const roleForStage: Record<WorkflowStage, UserRole> = {
-  DOCUMENT_SCRUTINY: UserRole.CLERK,
-  FIELD_VERIFICATION: UserRole.TALATI,
-  DEPUTY_REVIEW: UserRole.DEPUTY_MAMLATDAR,
-  FINAL_DECISION: UserRole.MAMLATDAR,
+  DOCUMENT_SCRUTINY: "CLERK",
+  FIELD_VERIFICATION: "TALATI",
+  DEPUTY_REVIEW: "DEPUTY_MAMLATDAR",
+  FINAL_DECISION: "MAMLATDAR",
 };
 
 const validStatusForStage: Record<WorkflowStage, readonly ApplicationStatus[]> = {
   DOCUMENT_SCRUTINY: [
-    ApplicationStatus.SUBMITTED,
-    ApplicationStatus.DOCUMENT_REVIEW,
+    "SUBMITTED",
+    "DOCUMENT_REVIEW",
   ],
-  FIELD_VERIFICATION: [ApplicationStatus.FIELD_VERIFICATION],
-  DEPUTY_REVIEW: [ApplicationStatus.DEPUTY_REVIEW],
-  FINAL_DECISION: [ApplicationStatus.FINAL_REVIEW],
+  FIELD_VERIFICATION: ["FIELD_VERIFICATION"],
+  DEPUTY_REVIEW: ["DEPUTY_REVIEW"],
+  FINAL_DECISION: ["FINAL_REVIEW"],
 };
 
 export function WorkflowControls({
@@ -92,7 +96,7 @@ export function WorkflowControls({
               label="નોંધ સાચવો (Save remarks)"
               secondary
             />
-            {currentStage === WorkflowStage.FINAL_DECISION ? (
+            {currentStage === "FINAL_DECISION" ? (
               <>
                 <ActionButton
                   disabled={isPending}
