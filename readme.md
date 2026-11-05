@@ -143,19 +143,49 @@ Copy `.env.example` to `.env` and set your local values:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/sevasetu?schema=public"
-AUTH_SECRET="replace-with-a-secure-random-value"
+AUTH_SECRET="paste-a-random-secret-of-at-least-32-characters-here"
+AUTH_TRUST_HOST="true"
 OPENAI_API_KEY="replace-with-your-openai-api-key"
 ```
+
+Generate a secret locally with Node.js, then copy its output into `.env`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Do not use the example placeholder as `AUTH_SECRET` or commit a generated secret.
 
 Validate the Prisma configuration and generate the client:
 
 ```bash
 npm run db:validate
 npm run db:generate
+npm run db:migrate
+npm run db:seed
 ```
 
-This foundation configures PostgreSQL but does not yet define application models,
-migrations, or seed data. Those will be added in a later milestone.
+Set `DATABASE_URL` in `.env` to a PostgreSQL database before running migrations
+or the seed script. The seed contains synthetic demonstration applications and
+the demo accounts below; do not use these credentials outside local development.
+Authentication uses `AUTH_SECRET`, `AUTH_TRUST_HOST`, and `DATABASE_URL` from
+`.env`. Set `AUTH_TRUST_HOST=true` only when the application is behind a trusted
+host or reverse proxy (including local development). The login checks the
+seeded account's bcrypt hash; it does not create or change users or roles.
+Unauthenticated users are redirected to `/login`.
+
+### Demo credentials
+
+These are public, local-demonstration-only accounts. All five accounts use the
+same password: `SevaSetuDemo2026!`.
+
+| Role | Email |
+|---|---|
+| Clerk | clerk@sevasetu.demo |
+| Talati | talati@sevasetu.demo |
+| Deputy Mamlatdar | deputy@sevasetu.demo |
+| Mamlatdar | mamlatdar@sevasetu.demo |
+| Admin | admin@sevasetu.demo |
 
 Start the development server:
 

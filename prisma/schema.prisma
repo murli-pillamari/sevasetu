@@ -5,3 +5,160 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  CLERK
+  TALATI
+  DEPUTY_MAMLATDAR
+  MAMLATDAR
+  ADMIN
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  DOCUMENT_REVIEW
+  FIELD_VERIFICATION
+  DEPUTY_REVIEW
+  FINAL_REVIEW
+  RETURNED
+  APPROVED
+  REJECTED
+}
+
+enum WorkflowStage {
+  DOCUMENT_SCRUTINY
+  FIELD_VERIFICATION
+  DEPUTY_REVIEW
+  FINAL_DECISION
+}
+
+enum WorkflowTaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  RETURNED
+}
+
+enum DocumentStatus {
+  UPLOADED
+  VERIFIED
+  REJECTED
+  NEEDS_REVIEW
+}
+
+model User {
+  id                   String         @id @default(cuid())
+  name                 String
+  email                String         @unique
+  passwordHash         String
+  role                 UserRole
+  office               String?
+  active               Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  assignedApplications Application[]  @relation("AssignedApplications")
+  verifiedDocuments    Document[]     @relation("VerifiedDocuments")
+  workflowTasks        WorkflowTask[]
+  auditLogs            AuditLog[]
+  reviewedAnalyses     AIAnalysis[]   @relation("ReviewedAnalyses")
+
+  @@index([role, active])
+}
+
+model Application {
+  id               String            @id @default(cuid())
+  applicationNo    String            @unique
+  applicantName    String
+  applicantNameGu  String?
+  phone            String
+  address          String
+  district         String
+  taluka           String
+  annualIncome     Decimal           @db.Decimal(12, 2)
+  familyMembers    Int
+  incomePurpose    String
+  status           ApplicationStatus @default(SUBMITTED)
+  currentStage     WorkflowStage     @default(DOCUMENT_SCRUTINY)
+  assignedUserId   String?
+  submittedAt      DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  completedAt      DateTime?
+  assignedUser     User?             @relation("AssignedApplications", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  documents        Document[]
+  workflowTasks    WorkflowTask[]
+  auditLogs        AuditLog[]
+  aiAnalyses       AIAnalysis[]
+
+  @@index([status, currentStage])
+  @@index([assignedUserId, status])
+  @@index([submittedAt])
+}
+
+model Document {
+  id            String         @id @default(cuid())
+  applicationId String
+  type          String
+  fileName      String
+  fileUrl       String
+  mimeType      String
+  status        DocumentStatus @default(UPLOADED)
+  extractedData Json?
+  verifiedById  String?
+  remarks       String?
+  createdAt     DateTime       @default(now())
+  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  verifiedBy    User?          @relation("VerifiedDocuments", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, status])
+  @@index([verifiedById])
+}
+
+model WorkflowTask {
+  id            String            @id @default(cuid())
+  applicationId String
+  assignedToId  String?
+  stage         WorkflowStage
+  status        WorkflowTaskStatus @default(PENDING)
+  remarks       String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  assignedTo    User?             @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, stage, status])
+  @@index([assignedToId, status])
+}
+
+model AuditLog {
+  id            String      @id @default(cuid())
+  applicationId String
+  userId        String
+  action        String
+  description   String
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model AIAnalysis {
+  id            String      @id @default(cuid())
+  applicationId String
+  analysisType  String
+  inputData     Json
+  outputData    Json
+  confidence    Float?
+  model         String
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime    @default(now())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  reviewedBy    User?       @relation("ReviewedAnalyses", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt])
+  @@index([reviewedById])
+}
