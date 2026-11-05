@@ -156,7 +156,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 Do not use the example placeholder as `AUTH_SECRET` or commit a generated secret.
 
-Validate the Prisma configuration and generate the client:
+Validate Prisma configuration and generate the client:
 
 ```bash
 npm run db:validate
