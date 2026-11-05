@@ -1,137 +1,127 @@
 # SevaSetu – સેવા સેતુ
 
-**AI-Assisted Government Application Workflow Management**
+**Gujarati-first income certificate application workflow demonstration**
 
-SevaSetu is a Gujarati-first workflow management platform designed to help government officers manage income certificate applications through a transparent, structured and efficient digital process.
+SevaSetu is a technical demonstration for organizing income certificate
+applications across Clerk, Talati, Deputy Mamlatdar, and Mamlatdar roles. It
+provides an assigned-case dashboard, a staged review workflow, an application
+history, and optional AI assistance limited to document metadata.
 
-The platform enables government employees to review applications, verify documents, conduct field inspections, collaborate across administrative stages and make informed decisions with AI assistance.
+This is not an official Gujarat Government system or a substitute for local
+rules and procedures. The workflow and document checklist are illustrative.
 
-## Problem Statement
+## Problem and intended users
 
-Government officers handling citizen service applications often deal with paper-based processes, document verification, field inspections and multiple approval stages.
+The demonstration addresses the difficulty of tracking application ownership,
+pending work, review remarks, and decisions across administrative roles. It is
+intended for Clerks, Talatis, Deputy Mamlatdars, and Mamlatdars evaluating a
+shared digital workflow. Synthetic data is used for demonstration.
 
-This can lead to:
-- Delays in application processing.
-- Missing or inconsistent documents.
-- Difficulty tracking application status.
-- Repetitive manual verification.
-- Limited visibility into pending workloads.
-- Lack of a centralized application history.
+## Implemented functionality
 
-SevaSetu aims to simplify this process through a centralized digital workflow.
+- **Authentication and roles:** Credentials-based sign-in for Clerk, Talati,
+  Deputy Mamlatdar, Mamlatdar, and Admin. Demo passwords are bcrypt-hashed.
+- **Dashboard:** Total, pending, needs-attention (returned plus open cases
+  submitted more than seven days ago), approved, rejected, and assigned-to-me
+  counts, with recent applications and status distribution. Admin dashboard/list
+  queries include all applications; other roles see their assigned applications
+  in those views.
+- **Application management:** Clerks can create applications. The list supports
+  application number, applicant name, mobile, status, and district search or
+  filtering, with pagination.
+- **Workflow:** The configured stages are document scrutiny (Clerk), field
+  verification (Talati), Deputy review, and final decision (Mamlatdar).
+  Assigned stage officers can record remarks and forward or return applications.
+  The Mamlatdar makes the final approve/reject decision; a rejection requires a
+  reason. Workflow changes use database transactions and server-side role and
+  assignment checks.
+- **Return and correction:** A returned case goes to its original active Clerk.
+  The Clerk can edit its existing application details and resubmit it with
+  correction remarks. Its application ID and reference number are retained.
+- **History:** The details page shows officer remarks and an audit timeline with
+  the recorded action, actor, role, and date.
+- **Gujarati-first UI:** Important navigation, labels, statuses, and workflow
+  actions are Gujarati-first, with English terminology where useful.
 
-## Proposed Solution
+### Current document and field-review limits
 
-A role-based application that supports four administrative roles:
+The Prisma schema contains a `Document` model, and the details page displays a
+checklist and any document records already in the database. However, the
+application has **no document upload, preview/download, file storage, or
+document verification interface**. It also has no dedicated field inspection
+form, evidence upload, or field-report capture; the Talati uses the shared
+workflow remarks and transition controls. Do not treat these as implemented
+capabilities.
 
-1. Clerk / Application Operator
-2. Talati – Field Verification Officer
-3. Deputy Mamlatdar – Review Officer
-4. Mamlatdar – Final Decision Authority
+The checklist in `src/lib/applications/presentation.ts` is a static
+demonstration list, not an official or administrator-configurable government
+requirement.
 
-The proposed MVP workflow has three main stages:
+## AI assistance
 
-### 1. Application and Document Scrutiny
-- Review applicant details.
-- Check uploaded documents.
-- Identify missing information.
-- Use AI to extract document information and highlight possible inconsistencies.
-- Forward the application or return it for correction.
+AI is advisory only. The AI review action is available to the assigned Clerk
+during document scrutiny. If `OPENAI_API_KEY` is configured, the server sends
+the configured checklist, document record types/statuses, and a
+preliminary-review flag to the OpenAI Chat Completions API. It does **not** send
+uploaded file contents, applicant identity, or application form details.
 
-### 2. Field Verification
-- Review applicant residential and income information.
-- Record field inspection observations.
-- Upload inspection evidence.
-- Use AI to summarize field reports.
-- Submit verification findings.
+The service validates successful AI output with Zod and saves it to
+`AIAnalysis`. It also computes missing checklist items locally. If no document
+records exist, the result is preliminary checklist assistance only. If the key
+is missing or the API is unavailable, the UI labels the local checklist as a
+manual fallback—not AI-generated findings. Manual officer review remains
+available.
 
-### 3. Final Review and Decision
-- Review application details and supporting evidence.
-- Review AI-generated summaries and warnings.
-- Approve, reject or return the application.
-- Record the decision and reason.
+The current AI integration does not perform document extraction or OCR, compare
+applicant details to document contents, summarize field reports, or prepare a
+final decision summary. AI never approves, rejects, or determines eligibility;
+officers retain decision authority. The OpenAI package is installed, but this
+review calls the API using server-side `fetch`.
 
-This is a proposed demonstration workflow and should not be interpreted as a complete representation of every district's official administrative procedure.
+## Technology
 
-## Key Features
-
-- Gujarati-first user interface.
-- Role-based authentication and authorization.
-- Application dashboard and workload statistics.
-- Application search and filtering.
-- Document upload and verification.
-- AI-assisted document information extraction.
-- Missing document detection.
-- Field verification management.
-- AI-generated review summaries.
-- Application approval, rejection and return.
-- Complete application audit history.
-- Responsive desktop and mobile interface.
-
-## AI Integration
-
-AI is designed to assist government officers, not replace their judgment.
-
-AI capabilities include:
-- Extracting relevant information from documents.
-- Highlighting potential inconsistencies.
-- Identifying potentially missing documents.
-- Summarizing field verification reports.
-- Preparing decision-support summaries.
-
-All AI-generated information must be reviewed by an authorized officer. AI cannot independently approve or reject an application.
-
-## Technology Stack
-
-| Layer | Technology |
+| Area | Implemented technology |
 |---|---|
-| Frontend | Next.js App Router |
-| Language | TypeScript |
-| Styling | Tailwind CSS |
-| UI Components | shadcn/ui |
-| Database | PostgreSQL |
-| ORM | Prisma |
-| Authentication | Auth.js |
-| Validation | Zod |
-| Forms | React Hook Form |
-| AI | OpenAI API |
-| File Storage | Cloudinary / AWS S3 |
-| Deployment | Vercel |
+| Web application | Next.js 16 App Router, React 19, TypeScript |
+| Styling | Tailwind CSS 4 |
+| Forms and validation | Native forms, React Server Actions, React `useActionState`, Zod 4 |
+| Database | PostgreSQL, Prisma 7, `@prisma/adapter-pg` |
+| Authentication | Auth.js v5 Credentials provider, JWT sessions, bcryptjs |
+| AI review | OpenAI Chat Completions API via server-side `fetch`; Zod response validation |
+| Deployment target | Vercel (deployment configuration documented below) |
 
-## Impact Measurement
+The project does not currently use shadcn/ui, React Hook Form, Cloudinary, or
+AWS S3.
 
-We will evaluate the application using:
+## Evaluation
 
-- Average application processing time.
-- Number of pending applications.
-- Document discrepancy rate.
-- Application return rate.
-- Time spent at each workflow stage.
-- Percentage of useful AI-generated flags confirmed by officers.
+Possible assessment measures include processing time, pending workload, return
+rate, time in each stage, and whether officers find AI metadata observations
+useful. These are **proposed evaluation measures**, not metrics currently
+collected or reported by the application.
 
-These are proposed evaluation metrics. Any demonstration results will be clearly identified as simulated data.
+## Security and demonstration limitations
 
-## Security and Privacy
+- Authentication, role checks, assignment checks, and input validation are
+  performed on the server for protected operations.
+- Application lists are scoped to assigned cases except for Admin; details are
+  also accessible to users who previously participated in the case workflow.
+- Application creation and workflow/correction changes write audit records.
+- Secrets are configured through environment variables. Do not commit `.env`
+  files or use real applicant information in this demonstration.
+- No file upload/storage capability is implemented, so document file access
+  controls are not provided.
+- Demo users share a public password and include an Admin account. Never use
+  these accounts or seed data for real production access.
 
-- Role-based access control.
-- Server-side authorization.
-- Secure password hashing.
-- Environment-based secret management.
-- Input validation.
-- Restricted document access.
-- Append-only audit history at the application level.
-- AI outputs separated from official decisions.
+## Local setup
 
-Only synthetic applicant data should be used in the demonstration.
+### Requirements
 
-## Running Locally
+- Node.js 20.9 or later and npm
+- A PostgreSQL database
 
-### Prerequisites
-- Node.js LTS
-- npm
-- PostgreSQL database
-
-### Installation
+### Install and configure
 
 ```bash
 git clone YOUR_REPOSITORY_URL
@@ -139,24 +129,23 @@ cd sevasetu
 npm install
 ```
 
-Copy `.env.example` to `.env` and set your local values:
+Copy `.env.example` to `.env`. Set `DATABASE_URL` to your PostgreSQL
+connection string and set `AUTH_SECRET` to a new random value of at least 32
+characters. `AUTH_TRUST_HOST=true` is used for local development. `OPENAI_API_KEY`
+is optional; without it, AI review falls back to the manual checklist.
+`OPENAI_MODEL` is optional and defaults to `gpt-4o-mini`.
 
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/sevasetu?schema=public"
-AUTH_SECRET="paste-a-random-secret-of-at-least-32-characters-here"
-AUTH_TRUST_HOST="true"
-OPENAI_API_KEY="replace-with-your-openai-api-key"
-```
-
-Generate a secret locally with Node.js, then copy its output into `.env`:
+Generate a secret locally:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-Do not use the example placeholder as `AUTH_SECRET` or commit a generated secret.
+Do not use the example placeholder as `AUTH_SECRET` or commit generated
+credentials.
 
-Validate Prisma configuration and generate the client:
+Validate the schema, apply the development migration, and seed synthetic demo
+accounts and applications:
 
 ```bash
 npm run db:validate
@@ -165,19 +154,23 @@ npm run db:migrate
 npm run db:seed
 ```
 
-Set `DATABASE_URL` in `.env` to a PostgreSQL database before running migrations
-or the seed script. The seed contains synthetic demonstration applications and
-the demo accounts below; do not use these credentials outside local development.
-Authentication uses `AUTH_SECRET`, `AUTH_TRUST_HOST`, and `DATABASE_URL` from
-`.env`. Set `AUTH_TRUST_HOST=true` only when the application is behind a trusted
-host or reverse proxy (including local development). The login checks the
-seeded account's bcrypt hash; it does not create or change users or roles.
-Unauthenticated users are redirected to `/login`.
+Start the application:
 
-### Demo credentials
+```bash
+npm run dev
+```
 
-These are public, local-demonstration-only accounts. All five accounts use the
-same password: `SevaSetuDemo2026!`.
+Open <http://localhost:3000>. `npm run build` runs `prisma generate` before
+`next build`. Other available commands are `npm run lint`,
+`npm run typecheck`, and `npm run db:migrate:deploy` (for applying checked-in
+migrations outside development).
+
+### Demo accounts
+
+The seed creates these synthetic demonstration accounts with bcrypt-hashed
+passwords. All use the same public demo-only password: `SevaSetuDemo2026!`.
+Run `npm run db:seed` before signing in. Do not use these credentials in a real
+production environment.
 
 | Role | Email |
 |---|---|
@@ -187,54 +180,45 @@ same password: `SevaSetuDemo2026!`.
 | Mamlatdar | mamlatdar@sevasetu.demo |
 | Admin | admin@sevasetu.demo |
 
-Start the development server:
+There is no user registration or user-management UI. The seed provisions demo
+users; production users must be provisioned through a trusted administrative
+process before they can sign in.
+
+## Vercel deployment
+
+Configure these variables in the Vercel project. `DATABASE_URL` and
+`AUTH_SECRET` are required for the application/build; set
+`AUTH_TRUST_HOST=true` for Auth.js behind Vercel. OpenAI variables are optional.
+
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL URL used by Prisma at build and runtime. |
+| `AUTH_SECRET` | Yes | Unique random value with at least 32 characters. |
+| `AUTH_TRUST_HOST` | Yes for Vercel | Set to `true` for the Vercel host/proxy. |
+| `OPENAI_API_KEY` | No | Enables OpenAI review; manual checklist fallback remains without it. |
+| `OPENAI_MODEL` | No | Model name; defaults to `gpt-4o-mini`. |
+
+Before deploying schema changes, set the production `DATABASE_URL` in a trusted
+deployment environment and run:
 
 ```bash
-npm run dev
+npm run db:migrate:deploy
 ```
 
-Open http://localhost:3000.
+Do not run `npm run db:migrate` against production; it runs Prisma's development
+migration command. Deploy to Vercel after migrations are applied. The configured
+build command generates Prisma Client and builds Next.js. Only seed an isolated
+demo database if public demo access is explicitly intended; never seed the
+known demo accounts into a real production database.
 
-## Production Deployment (Vercel)
+## Project plan
 
-Use a production PostgreSQL database and configure these variables in the
-Vercel project's **Production** environment before deploying:
+See [project_plan.md](./project_plan.md) for the development roadmap. It
+describes planned architecture and features; it is not a statement that every
+planned item is implemented.
 
-| Variable | Required | Purpose |
-|---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection used by Prisma at build and runtime. Use the provider's recommended pooled/runtime URL where applicable. |
-| `AUTH_SECRET` | Yes | Random secret of at least 32 characters. Generate a unique value; do not use the example placeholder. |
-| `AUTH_TRUST_HOST` | Yes for Vercel | Set to `true` so Auth.js trusts the Vercel host/proxy. |
-| `OPENAI_API_KEY` | No | Enables AI-assisted review. Without it, officers can still use the manual checklist. |
-| `OPENAI_MODEL` | No | OpenAI model name; defaults to `gpt-4o-mini`. |
+## Disclaimer
 
-No `NEXT_PUBLIC_` variables are used. Keep all secrets server-side and out of
-Git. `npm run build` generates Prisma Client before running `next build`.
-
-Deployment steps:
-
-1. Create/link the Vercel project and set the variables above for the relevant
-   deployment environment. `DATABASE_URL` and `AUTH_SECRET` must also be
-   available to the build.
-2. Before deploying a schema change, run `npm run db:migrate:deploy` in a
-   trusted CI/deployment environment with `DATABASE_URL` set to the production
-   PostgreSQL database. This applies checked-in migrations; do not run
-   `prisma migrate dev` against production.
-3. Deploy the branch to Vercel. The build runs `prisma generate && next build`.
-4. For a dedicated public demo deployment only, run `npm run db:seed` against
-   that deployment's isolated demo database to create the demo users and
-   synthetic applications. The demo credentials are public and include an
-   administrator account; never seed them into a real production environment.
-
-Prisma tracks applied migrations in the database and skips them on subsequent
-deploys.
-
-## Project Status
-
-Development in progress.
-
-See [project_plan.md](project_plan.md) for the implementation roadmap.
-
-## Important Disclaimer
-
-SevaSetu is a technical demonstration project developed for an engineering assessment. It is not an official Gujarat Government application and does not issue legally valid income certificates.
+SevaSetu is a technical demonstration for an engineering assessment. It is not
+an official Gujarat Government application and does not issue legally valid
+income certificates.
