@@ -195,6 +195,40 @@ npm run dev
 
 Open http://localhost:3000.
 
+## Production Deployment (Vercel)
+
+Use a production PostgreSQL database and configure these variables in the
+Vercel project's **Production** environment before deploying:
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection used by Prisma at build and runtime. Use the provider's recommended pooled/runtime URL where applicable. |
+| `AUTH_SECRET` | Yes | Random secret of at least 32 characters. Generate a unique value; do not use the example placeholder. |
+| `AUTH_TRUST_HOST` | Yes for Vercel | Set to `true` so Auth.js trusts the Vercel host/proxy. |
+| `OPENAI_API_KEY` | No | Enables AI-assisted review. Without it, officers can still use the manual checklist. |
+| `OPENAI_MODEL` | No | OpenAI model name; defaults to `gpt-4o-mini`. |
+
+No `NEXT_PUBLIC_` variables are used. Keep all secrets server-side and out of
+Git. `npm run build` generates Prisma Client before running `next build`.
+
+Deployment steps:
+
+1. Create/link the Vercel project and set the variables above for the relevant
+   deployment environment. `DATABASE_URL` and `AUTH_SECRET` must also be
+   available to the build.
+2. Before deploying a schema change, run `npm run db:migrate:deploy` in a
+   trusted CI/deployment environment with `DATABASE_URL` set to the production
+   PostgreSQL database. This applies checked-in migrations; do not run
+   `prisma migrate dev` against production.
+3. Deploy the branch to Vercel. The build runs `prisma generate && next build`.
+4. For a dedicated public demo deployment only, run `npm run db:seed` against
+   that deployment's isolated demo database to create the demo users and
+   synthetic applications. The demo credentials are public and include an
+   administrator account; never seed them into a real production environment.
+
+Prisma tracks applied migrations in the database and skips them on subsequent
+deploys.
+
 ## Project Status
 
 Development in progress.
